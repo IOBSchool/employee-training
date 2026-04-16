@@ -210,6 +210,17 @@
   let allQuestions = [], allResponses = [], settings = { totalRecipients: 0, departmentRecipients: {} };
   let isAdmin = false;
 
+  const DEFAULT_DEPTS = [
+    '経営会議メンバー',
+    '商品部（商品・コーディネーター）',
+    '輸入・物流部（物流・輸入・BtoB）',
+    '営業企画部（EC・マーケティング）',
+    '店舗開発部',
+    '経営企画部（経営企画・システム）',
+    '管理部（人事総務）',
+    '店舗運営部（店舗運営・店舗・エリアマネージャー・業務推進）',
+  ];
+
   // ===== ログイン =====
   function doLogin() {
     const pw = document.getElementById('login-pw').value;
@@ -463,25 +474,54 @@
   // ===== 設定 =====
   async function loadSettings() {
     const { data } = await sb.from('output_settings').select('*').eq('id', 1).maybeSingle();
-    if (!data) return;
-    document.getElementById('setting-total').value = data.total_recipients || '';
     const deptContainer = document.getElementById('dept-rows');
     deptContainer.innerHTML = '';
-    Object.entries(data.department_recipients || {}).forEach(([d, c]) => addDeptRow(d, c));
+    if (!data) {
+      // 初回：デフォルト部署を全件表示
+      DEFAULT_DEPTS.forEach(d => addDeptRow(d, ''));
+      return;
+    }
+    document.getElementById('setting-total').value = data.total_recipients || '';
+    const saved = data.department_recipients || {};
+    if (Object.keys(saved).length === 0) {
+      // 保存済みデータが空ならデフォルト部署を表示
+      DEFAULT_DEPTS.forEach(d => addDeptRow(d, ''));
+    } else {
+      Object.entries(saved).forEach(([d, c]) => addDeptRow(d, c));
+    }
   }
 
   function addDeptRow(dept = '', count = '') {
     const row = document.createElement('div');
     row.className = 'dept-row';
-    row.innerHTML = `<input type="text" placeholder="部署名（例: 営業部）" value="${esc(String(dept))}" class="dept-name"><input type="number" placeholder="人数" value="${count}" class="dept-count" min="0"><button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">削除</button>`;
+    const opts = DEFAULT_DEPTS.map(d =>
+      `<option value="${esc(d)}" ${d === dept ? 'selected' : ''}>${esc(d)}</option>`
+    ).join('');
+    const isCustom = dept && !DEFAULT_DEPTS.includes(dept);
+    row.innerHTML = `
+      <select class="dept-name" onchange="handleDeptSelect(this)" style="flex:1;">
+        <option value="">— 部署を選択 —</option>
+        ${opts}
+        <option value="__custom__" ${isCustom ? 'selected' : ''}>その他（自由入力）</option>
+      </select>
+      <input type="text" class="dept-custom" placeholder="部署名を入力" value="${isCustom ? esc(String(dept)) : ''}" style="flex:1;display:${isCustom ? 'block' : 'none'};">
+      <input type="number" placeholder="人数" value="${count}" class="dept-count" min="0" style="width:90px;">
+      <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">削除</button>`;
     document.getElementById('dept-rows').appendChild(row);
+  }
+
+  function handleDeptSelect(sel) {
+    const customInput = sel.parentElement.querySelector('.dept-custom');
+    customInput.style.display = sel.value === '__custom__' ? 'block' : 'none';
   }
 
   async function saveSettings() {
     const total = parseInt(document.getElementById('setting-total').value) || 0;
     const deptMap = {};
     document.querySelectorAll('.dept-row').forEach(row => {
-      const n = row.querySelector('.dept-name').value.trim();
+      const sel = row.querySelector('.dept-name');
+      const customInput = row.querySelector('.dept-custom');
+      let n = sel.value === '__custom__' ? customInput.value.trim() : sel.value;
       const c = parseInt(row.querySelector('.dept-count').value) || 0;
       if (n) deptMap[n] = c;
     });
