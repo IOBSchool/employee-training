@@ -132,7 +132,10 @@
 
   async function loadQuestion() {
     try {
-      const today = new Date().toISOString().slice(0, 10);
+      // 日本時間(JST=UTC+9)の暦日で判定する。
+      // これで毎週月曜0:00(JST)ちょうどに、その週の問いへ自動で切り替わる。
+      // (new Date().toISOString() はUTC基準のため、JSTでは最大9時間ズレてしまう問題への対処)
+      const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
       const { data, error } = await sb
         .from('output_questions')
         .select('*')
