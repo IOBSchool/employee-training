@@ -21,8 +21,13 @@
     header .label{color:var(--green-light);font-size:11px;letter-spacing:3px;text-transform:uppercase;}
     header h1{color:var(--white);font-size:18px;font-weight:400;margin-top:4px;font-family:'Noto Serif JP',serif;}
     .header-nav{margin-top:12px;display:flex;justify-content:center;gap:16px;}
-    .header-nav a{color:rgba(255,255,255,.7);font-size:12px;text-decoration:none;padding:4px 12px;border:1px solid rgba(255,255,255,.3);border-radius:100px;transition:all .2s;}
-    .header-nav a:hover{background:rgba(255,255,255,.1);color:#fff;}
+    .header-nav a{color:var(--green-dark);background:var(--white);font-size:13px;font-weight:700;text-decoration:none;padding:7px 18px;border:none;border-radius:100px;transition:all .2s;box-shadow:0 2px 10px rgba(0,0,0,.12);}
+    .header-nav a:hover{background:var(--gold);color:#fff;transform:translateY(-1px);}
+    .mypage-cta{display:flex;align-items:center;gap:12px;margin-top:24px;padding:20px 24px;background:var(--white);border:2px solid var(--green-mid);border-radius:16px;color:var(--green-dark);font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 4px 20px rgba(45,90,61,.1);transition:all .2s;}
+    .mypage-cta:hover{background:var(--green-pale);transform:translateY(-1px);box-shadow:0 6px 24px rgba(45,90,61,.16);}
+    .mypage-cta .cta-icon{font-size:22px;}
+    .mypage-cta .cta-sub{display:block;font-size:11px;font-weight:400;color:var(--text-light);margin-top:3px;}
+    .mypage-cta .cta-arrow{margin-left:auto;color:var(--green-mid);font-size:18px;}
     main{max-width:680px;margin:0 auto;padding:40px 20px 80px;}
     .week-badge{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--white);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:20px;}
     .question-card{background:var(--white);border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(45,90,61,.1);margin-bottom:28px;}
@@ -114,6 +119,13 @@
       <div class="error-msg" id="error-msg"></div>
       <button class="btn-submit" id="btn-submit" onclick="submitAnswer()">回答を送信する</button>
     </div>
+    <a class="mypage-cta" href="output-mypage.html">
+      <span class="cta-icon">📋</span>
+      <span>過去に書いた自分の回答を読み返す
+        <span class="cta-sub">回答時のお名前とメールアドレスで、いつでも見返せます</span>
+      </span>
+      <span class="cta-arrow">→</span>
+    </a>
   </div>
 
   <div id="success-screen">
