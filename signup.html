@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>メールレッスン 受講者登録｜事務局用</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Old+Mincho:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#f26b3b;
+    --brown:#553727;
+    --bg:#f9f7ef;
+    --blue:#0085c9;
+    --sub:#85634b;
+    --line:#e4dccb;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--brown);
+    font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN",sans-serif;
+    line-height:1.8;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:32px 20px 64px}
+  header{text-align:center;margin-bottom:28px}
+  h1{
+    font-family:"Zen Old Mincho",serif;
+    font-size:22px;
+    margin:0 0 6px;
+    letter-spacing:.04em;
+  }
+  .lead{font-size:13px;color:var(--sub);margin:0}
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:24px 20px;
+    box-shadow:0 2px 10px rgba(85,55,39,.06);
+  }
+  label{display:block;font-size:14px;font-weight:500;margin:0 0 6px}
+  .hint{font-size:12px;color:var(--sub);font-weight:400;margin-left:6px}
+  input[type=text],input[type=email],input[type=password]{
+    width:100%;
+    padding:13px 14px;
+    font-size:16px;
+    font-family:inherit;
+    color:var(--brown);
+    background:#fffdf8;
+    border:1px solid var(--line);
+    border-radius:9px;
+    margin-bottom:18px;
+  }
+  input:focus{outline:2px solid var(--orange);outline-offset:1px;border-color:transparent}
+  button{
+    width:100%;
+    padding:14px;
+    font-size:16px;
+    font-weight:700;
+    font-family:inherit;
+    color:#fff;
+    background:var(--orange);
+    border:0;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  button:disabled{opacity:.5;cursor:default}
+  button.secondary{background:transparent;color:var(--sub);font-weight:500;font-size:13px;padding:10px;margin-top:14px}
+  .msg{margin-top:16px;padding:13px 15px;border-radius:9px;font-size:14px;display:none}
+  .msg.show{display:block}
+  .msg.ok{background:#eef7fb;color:#0f5f85;border:1px solid #bfe0ee}
+  .msg.ng{background:#fdeee9;color:#a83f1c;border:1px solid #f6cdbe}
+  .msg.info{background:#f5f1e6;color:var(--sub);border:1px solid var(--line)}
+  .recent{margin-top:26px;font-size:13px;color:var(--sub)}
+  .recent h2{font-size:13px;font-weight:700;color:var(--brown);margin:0 0 8px}
+  .recent ul{margin:0;padding-left:1.2em}
+  .recent li{margin-bottom:4px}
+  footer{text-align:center;font-size:11px;color:var(--sub);margin-top:34px;line-height:1.7}
+  .hidden{display:none}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>メールレッスン 受講者登録</h1>
+    <p class="lead">事務局専用ページ</p>
+  </header>
+
+  <!-- ① パスワード画面 -->
+  <section id="loginView" class="card">
+    <label for="pw">パスワード</label>
+    <input type="password" id="pw" autocomplete="current-password" placeholder="事務局用パスワード">
+    <button id="loginBtn">開く</button>
+    <div id="loginMsg" class="msg"></div>
+  </section>
+
+  <!-- ② 登録画面 -->
+  <section id="formView" class="card hidden">
+    <label for="name">お名前 <span class="hint">例：山田 花子</span></label>
+    <input type="text" id="name" autocomplete="off" placeholder="山田 花子">
+
+    <label for="email">メールアドレス</label>
+    <input type="email" id="email" autocomplete="off" inputmode="email" placeholder="hanako@example.com">
+
+    <label for="note">メモ <span class="hint">任意・店舗名や部署など</span></label>
+    <input type="text" id="note" autocomplete="off" placeholder="（空欄でもOK）">
+
+    <button id="submitBtn">この人を登録する</button>
+    <div id="formMsg" class="msg"></div>
+
+    <div class="recent hidden" id="recentBox">
+      <h2>このページで登録した人（今回の操作分）</h2>
+      <ul id="recentList"></ul>
+    </div>
+
+    <button class="secondary" id="logoutBtn">閉じる（パスワード画面に戻る）</button>
+  </section>
+
+  <footer>
+    登録された方には、登録直後の回からメールレッスンが届きます。<br>
+    不具合やご質問は、Teamsまでご連絡ください。
+  </footer>
+
+</div>
+
+<script>
+/* ===== 設定 ==============================================
+   GAS_URL には、Google Apps Script のデプロイURL（/exec で終わるもの）を入れます。
+   ========================================================= */
+var GAS_URL = "https://script.google.com/macros/s/AKfycbzUGMCC0W5RIrnhhE-ruEM1nJIogYeTZT8mOw2l2AXXJkduWj8irYUaoSkeDPuQh5H7/exec";
+
+var $ = function(id){ return document.getElementById(id); };
+var token = sessionStorage.getItem("p1_token") || "";
+
+/* --- GASへの通信（JSONP：CORSの影響を受けない方式） --- */
+function callGas(params, onDone){
+  var cbName = "cb_" + Date.now() + "_" + Math.floor(Math.random()*100000);
+  var timer = setTimeout(function(){
+    cleanup();
+    onDone({ ok:false, error:"通信がタイムアウトしました。もう一度お試しください。" });
+  }, 30000);
+
+  function cleanup(){
+    clearTimeout(timer);
+    try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; }
+    if(s && s.parentNode) s.parentNode.removeChild(s);
+  }
+
+  window[cbName] = function(res){ cleanup(); onDone(res); };
+
+  var qs = [];
+  for(var k in params){ qs.push(encodeURIComponent(k) + "=" + encodeURIComponent(params[k])); }
+  qs.push("callback=" + cbName);
+
+  var s = document.createElement("script");
+  s.src = GAS_URL + "?" + qs.join("&");
+  s.onerror = function(){
+    cleanup();
+    onDone({ ok:false, error:"サーバーに接続できませんでした。ネット接続を確認してください。" });
+  };
+  document.body.appendChild(s);
+}
+
+function showMsg(el, type, text){
+  el.className = "msg show " + type;
+  el.innerHTML = text;
+}
+function hideMsg(el){ el.className = "msg"; el.innerHTML = ""; }
+
+function openForm(){
+  $("loginView").classList.add("hidden");
+  $("formView").classList.remove("hidden");
+  $("name").focus();
+}
+
+/* --- ログイン --- */
+function doLogin(){
+  var pw = $("pw").value.trim();
+  if(!pw){ showMsg($("loginMsg"), "ng", "パスワードを入力してください。"); return; }
+  $("loginBtn").disabled = true;
+  showMsg($("loginMsg"), "info", '<span class="spinner"></span>確認しています…');
+
+  callGas({ action:"login", pw:pw }, function(res){
+    $("loginBtn").disabled = false;
+    if(res && res.ok){
+      token = res.token;
+      sessionStorage.setItem("p1_token", token);
+      hideMsg($("loginMsg"));
+      $("pw").value = "";
+      openForm();
+    }else{
+      showMsg($("loginMsg"), "ng", (res && res.error) || "パスワードが違います。");
+    }
+  });
+}
+
+/* --- 登録 --- */
+function doRegister(){
+  var name  = $("name").value.trim();
+  var email = $("email").value.trim();
+  var note  = $("note").value.trim();
+
+  if(!name){ showMsg($("formMsg"), "ng", "お名前を入力してください。"); $("name").focus(); return; }
+  if(!email || email.indexOf("@") < 1 || email.indexOf(".") < 0){
+    showMsg($("formMsg"), "ng", "メールアドレスを確認してください。"); $("email").focus(); return;
+  }
+
+  $("submitBtn").disabled = true;
+  showMsg($("formMsg"), "info", '<span class="spinner"></span>Flodeskに登録しています…');
+
+  callGas({ action:"register", token:token, name:name, email:email, note:note }, function(res){
+    $("submitBtn").disabled = false;
+
+    if(res && res.ok){
+      showMsg($("formMsg"), "ok",
+        "登録しました。<br>" + escapeHtml(name) + "（" + escapeHtml(email) + "）に、" +
+        "登録直後の回からメールレッスンが届きます。" +
+        (res.already ? "<br>※このアドレスはすでにFlodeskにあったため、情報を更新して登録しました。" : ""));
+      addRecent(name, email);
+      $("name").value = ""; $("email").value = ""; $("note").value = "";
+      $("name").focus();
+    }else if(res && res.needLogin){
+      sessionStorage.removeItem("p1_token"); token = "";
+      $("formView").classList.add("hidden");
+      $("loginView").classList.remove("hidden");
+      showMsg($("loginMsg"), "ng", "時間が経ったため、もう一度パスワードを入力してください。");
+    }else{
+      showMsg($("formMsg"), "ng", (res && res.error) || "登録できませんでした。もう一度お試しください。");
+    }
+  });
+}
+
+function addRecent(name, email){
+  $("recentBox").classList.remove("hidden");
+  var li = document.createElement("li");
+  li.textContent = name + "（" + email + "）";
+  $("recentList").appendChild(li);
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+}
+
+/* --- イベント --- */
+$("loginBtn").addEventListener("click", doLogin);
+$("pw").addEventListener("keydown", function(e){ if(e.key === "Enter") doLogin(); });
+$("submitBtn").addEventListener("click", doRegister);
+$("note").addEventListener("keydown", function(e){ if(e.key === "Enter") doRegister(); });
+$("logoutBtn").addEventListener("click", function(){
+  sessionStorage.removeItem("p1_token"); token = "";
+  $("formView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  hideMsg($("formMsg"));
+  $("pw").focus();
+});
+
+/* すでにこのタブでログイン済みなら、登録画面から始める */
+if(token) openForm();
+</script>
+</body>
+</html>
