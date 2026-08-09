@@ -29,6 +29,15 @@
     .mypage-cta .cta-sub{display:block;font-size:11px;font-weight:400;color:var(--text-light);margin-top:3px;}
     .mypage-cta .cta-arrow{margin-left:auto;color:var(--green-mid);font-size:18px;}
     main{max-width:680px;margin:0 auto;padding:40px 20px 80px;}
+    .q-tabs{margin-bottom:24px;}
+    .q-tabs-lead{font-size:13px;color:var(--text-mid);line-height:1.7;margin-bottom:12px;}
+    .q-tabs-list{display:flex;flex-wrap:wrap;gap:10px;}
+    .q-tab{flex:1 1 200px;text-align:left;padding:14px 18px;background:var(--white);border:2px solid #d4e6da;border-radius:14px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;color:var(--text-mid);transition:all .2s;}
+    .q-tab:hover{border-color:var(--green-light);transform:translateY(-1px);}
+    .q-tab .qt-week{display:block;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--green-mid);margin-bottom:4px;}
+    .q-tab .qt-text{display:block;font-size:13px;line-height:1.6;}
+    .q-tab.active{background:var(--green-dark);border-color:var(--green-dark);color:var(--white);box-shadow:0 4px 18px rgba(45,90,61,.22);}
+    .q-tab.active .qt-week{color:var(--gold);}
     .week-badge{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--white);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:20px;}
     .question-card{background:var(--white);border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(45,90,61,.1);margin-bottom:28px;}
     .question-header{background:linear-gradient(135deg,var(--green-dark),var(--green-mid));padding:32px 36px;}
@@ -82,6 +91,10 @@
   </div>
 
   <div id="question-form" style="display:none;">
+    <div id="q-tabs" class="q-tabs" style="display:none;">
+      <p class="q-tabs-lead">今週は、2つの問いに書いていただけます。書きたい問いを選んでください。</p>
+      <div id="q-tabs-list" class="q-tabs-list"></div>
+    </div>
     <div class="week-badge">
       <span>📅</span><span id="week-label">第1週</span>
     </div>
@@ -139,6 +152,7 @@
 <script>
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let currentQuestion = null;
+  let activeQuestions = [];
 
   window.addEventListener('DOMContentLoaded', loadQuestion);
 
@@ -148,31 +162,66 @@
       // これで毎週月曜0:00(JST)ちょうどに、その週の問いへ自動で切り替わる。
       // (new Date().toISOString() はUTC基準のため、JSTでは最大9時間ズレてしまう問題への対処)
       const today = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      // 期間が重なっている問いは1件に絞らず全部出す。
+      // 前の週の問いの終了日を延ばせば、今週の問いと並べて選べるようになる。
       const { data, error } = await sb
         .from('output_questions')
         .select('*')
         .lte('start_date', today)
         .gte('end_date', today)
-        .limit(1)
-        .maybeSingle();
+        .order('week_number');
 
       document.getElementById('loading').style.display = 'none';
       if (error) throw error;
-      if (!data) { document.getElementById('no-question').style.display = 'block'; return; }
+      if (!data || !data.length) { document.getElementById('no-question').style.display = 'block'; return; }
 
-      currentQuestion = data;
-      document.getElementById('week-label').textContent = `第${data.week_number}週：${data.month_label}`;
-      document.getElementById('theme-label').textContent = data.theme || '';
-      document.getElementById('question-text').textContent = data.question;
-      const desc = document.getElementById('question-desc');
-      desc.textContent = data.description || '';
-      desc.style.display = data.description ? 'block' : 'none';
-      document.getElementById('period-text').textContent =
-        `回答期間：${fmtDate(data.start_date)} 〜 ${fmtDate(data.end_date)}`;
+      activeQuestions = data;
+      renderTabs();
+      selectQuestion(0);
       document.getElementById('question-form').style.display = 'block';
     } catch(e) {
       document.getElementById('loading').textContent = '読み込みに失敗しました。ページを再読み込みしてください。';
     }
+  }
+
+  // 問いが2つ以上あるときだけ、選択ボタンを出す（1つのときは今までと同じ見た目）
+  function renderTabs() {
+    const wrap = document.getElementById('q-tabs');
+    if (activeQuestions.length < 2) { wrap.style.display = 'none'; return; }
+    document.querySelector('.q-tabs-lead').textContent =
+      `今週は、${activeQuestions.length}つの問いに書いていただけます。書きたい問いを選んでください。`;
+    document.getElementById('q-tabs-list').innerHTML = activeQuestions.map((q, i) =>
+      `<button type="button" class="q-tab" data-idx="${i}">
+         <span class="qt-week">問い${q.week_number}</span>
+         <span class="qt-text">${escapeHtml(q.theme || q.question)}</span>
+       </button>`).join('');
+    document.querySelectorAll('.q-tab').forEach(btn =>
+      btn.addEventListener('click', () => selectQuestion(parseInt(btn.dataset.idx, 10))));
+    wrap.style.display = 'block';
+  }
+
+  function selectQuestion(idx) {
+    const q = activeQuestions[idx];
+    if (!q) return;
+    currentQuestion = q;
+    document.querySelectorAll('.q-tab').forEach(btn =>
+      btn.classList.toggle('active', parseInt(btn.dataset.idx, 10) === idx));
+    document.getElementById('week-label').textContent = `第${q.week_number}週：${q.month_label}`;
+    document.getElementById('theme-label').textContent = q.theme || '';
+    document.getElementById('question-text').textContent = q.question;
+    const desc = document.getElementById('question-desc');
+    desc.textContent = q.description || '';
+    desc.style.display = q.description ? 'block' : 'none';
+    document.getElementById('period-text').textContent =
+      `回答期間：${fmtDate(q.start_date)} 〜 ${fmtDate(q.end_date)}`;
+    // 送信完了画面が出たまま問いを切り替えても、入力欄に戻れるようにする
+    document.getElementById('success-screen').style.display = 'none';
+    document.getElementById('question-form').style.display = 'block';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
   function fmtDate(s) {
@@ -215,8 +264,10 @@
     }
 
     document.getElementById('question-form').style.display = 'none';
+    const more = activeQuestions.length > 1
+      ? '<br>ほかの問いにも、続けて書いていただけます。' : '';
     document.getElementById('success-msg').innerHTML =
-      `${name}さん、ありがとうございます！<br>あなたのアウトプットがしっかり届きました。<br>引き続き学びを続けていきましょう。`;
+      `${escapeHtml(name)}さん、ありがとうございます！<br>あなたのアウトプットがしっかり届きました。${more}`;
     document.getElementById('success-screen').style.display = 'block';
   }
 
